@@ -1,19 +1,16 @@
-const moment = require(‘validator’);
-exports.isCreditCard = functions.https.onRequest((req, res) => {
- if (req.method === ‘PUT’) {
- res.status(403).send(‘Forbidden!’);
- }
- cors(req, res, () => {
- let ccnum = req.query.ccnum;
- if (!ccnum) {
- ccnum = req.body.ccnum;
- }
- let msg;
- if(validator().isCreditCard(ccnum)){
- msg = ‘Valid credit card’;
- }else{
- msg = ‘Invalid credit card’;
- }
- res.status(200).send(msg);
- });
+'use strict';
+
+const functions = require('firebase-functions');
+const BitlyClient = require('bitly');
+// TODO: Make sure to set the bitly.access_token cloud functions config using the CLI.
+const bitly = BitlyClient(functions.config().bitly.access_token);
+
+// Shorten URL written to /links/{linkID}.
+exports.shortenUrl = functions.database.ref('/links/{linkID}').onCreate(async (snap) => {
+  const originalUrl = snap.val();
+  const response = await bitly.shorten(originalUrl);
+  return snap.ref.set({
+    original: originalUrl,
+    short: response.data.url,
+  })
 });
